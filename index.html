@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trooly.CATI | 职场动物人格测试</title>
+    
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { DEFAULT: '#66C0B1', light: '#E6F5F3', dark: '#4BA395' },
+                        dark: '#1F2937',
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0,0,0,0.03)',
+                        'float': '0 10px 30px -5px rgba(102, 192, 177, 0.25)',
+                        'badge': '0 4px 12px rgba(0,0,0,0.05), inset 0 2px 0 rgba(255,255,255,0.9)'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* 强制全局无衬线体，保障高级感与阅读体验 */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+        
+        :root {
+            --font-sans: 'Inter', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+        }
+
+        body { 
+            font-family: var(--font-sans); 
+            background-color: #F9FAFB; 
+            margin: 0; 
+            color: #374151;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .slide-up { animation: slideUp 0.4s ease-out forwards; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .spinner {
+            border: 3px solid rgba(102, 192, 177, 0.15);
+            border-top: 3px solid #66C0B1;
+            border-radius: 50%;
+            width: 32px; height: 32px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #66C0B1; border-radius: 10px; }
+        
+        .option-btn { transition: all 0.2s ease-in-out; }
+        .option-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        
+        /* 扁平图标微交互：去除高消耗滤镜，仅保留缩放和轻微阴影，极度流畅 */
+        .icon-flat {
+            filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.08));
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            width: 65%;
+            height: 65%;
+            object-fit: contain;
+        }
+        .animal-card:hover .icon-flat {
+            transform: scale(1.15) translateY(-2px);
+        }
+    </style>
+</head>
+<body class="selection:bg-brand selection:text-white min-h-screen flex flex-col">
+    
+    <header class="w-full py-5 px-6 md:px-10 flex justify-between items-center z-10 relative max-w-6xl mx-auto">
+        <div class="font-black text-2xl tracking-tight text-gray-800">Trooly<span class="text-brand">.</span>CATI</div>
+        <button id="langToggleBtn" onclick="toggleLang()" class="flex items-center gap-1.5 text-[15px] font-bold text-gray-500 hover:text-[#5AB2FF] transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5 text-[#5AB2FF]">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" />
+            </svg>
+            <span id="langText">English</span>
+        </button>
+    </header>
+
+    <main id="app" class="max-w-6xl mx-auto w-full flex-1 flex flex-col justify-center p-4 md:p-6 relative z-0">
+        <div id="content" class="w-full"></div>
+    </main>
+
+    <script>
+        let lang = 'zh';
+        let currentQ = 0;
+        let scores = { E_I: 0, S_N: 0, T_F: 0, J_P: 0 };
+        let historyQueue = []; 
+        let animalKey = null;
+
+        const i18n = {
+            zh: {
+                badge: "✨ 永久免费 100% FREE",
+                titleP1: "探索你的",
+                titleP2: "真实人格",
+                subtitle: "Discover Your True Self",
+                desc: "参加我们免费、详尽的职场动物性格测试。只需 5 分钟，即可揭示您的优势、职场盲点和潜能。",
+                startBtn: "开始免费测试 Start Free Test ➔",
+                resultTitle: "你的性格测试结果",
+                resultSubtitle: "Your Personality Result",
+                analyzing: "分析报告生成中...",
+                radarTitle: "维度分析",
+                radarSubtitle: "DIMENSIONAL BREAKDOWN",
+                retake: "重新测试 / Retake Test",
+                prevBtn: "返回上一题",
+                qPrefix: "问题 QUESTION",
+                options: ["非常反对", "反对", "中立", "同意", "非常同意"],
+                optionsEn: ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"],
+                aiTitles: ["职场核心优势", "需要注意的盲点", "生存箴言"]
+            },
+            en: {
+                badge: "✨ 100% FREE TEST",
+                titleP1: "Discover Your",
+                titleP2: "True Persona",
+                subtitle: "Unlock Your Inner Animal",
+                desc: "Take our free, detailed workplace personality test. In just 5 minutes, reveal your strengths and potential.",
+                startBtn: "Start Free Test ➔",
+                resultTitle: "Your Personality Result",
+                resultSubtitle: "Career Animal Edition",
+                analyzing: "Generating insights...",
+                radarTitle: "Dimensional Breakdown",
+                radarSubtitle: "ABILITY ANALYSIS",
+                retake: "Retake Test",
+                prevBtn: "Back to Previous",
+                qPrefix: "QUESTION",
+                options: ["Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"],
+                optionsEn: ["", "", "", "", ""],
+                aiTitles: ["Core Strengths", "Growth Areas", "Survival Motto"]
+            }
+        };
+
+        const questions = [
+            { zh: "我喜欢在团队会议上主动分享我尚未成熟的想法。", en: "I actively share my unpolished ideas in team meetings.", dim: 'E_I', lean: 'E' },
+            { zh: "处理任务时，我倾向于严格遵循既定的规则和SOP流程。", en: "I tend to strictly follow established rules and SOPs.", dim: 'S_N', lean: 'S' },
+            { zh: "做决策时，客观数据和逻辑比团队成员的个人感受更重要。", en: "Objective data is more important than personal feelings in decisions.", dim: 'T_F', lean: 'T' },
+            { zh: "我喜欢提前制定详细的工作计划，而不是临时见机行事。", en: "I prefer detailed planning in advance over winging it.", dim: 'J_P', lean: 'J' },
+            { zh: "面对充满挑战的项目，我更愿意和团队头脑风暴，而不是一个人憋大招。", en: "I prefer brainstorming with the team over thinking alone on hard projects.", dim: 'E_I', lean: 'E' },
+            { zh: "我经常关注行业未来的宏大趋势，有时觉得解决眼前的繁琐细节很枯燥。", en: "I focus on future trends and often find immediate details boring.", dim: 'S_N', lean: 'N' },
+            { zh: "当同事遇到困难，我通常先帮他们分析问题原因，而不是先安抚情绪。", en: "When a colleague struggles, I analyze the problem before comforting them.", dim: 'T_F', lean: 'T' },
+            { zh: "在截止日期前，我通常会提早几天完成工作，极度讨厌最后时刻的慌乱。", en: "I finish work early before deadlines to avoid last-minute panic.", dim: 'J_P', lean: 'J' },
+            { zh: "经过一天的忙碌社交和高频会议后，我需要独自一人待着来恢复能量。", en: "After a day of meetings, I need to be alone to recharge.", dim: 'E_I', lean: 'I' },
+            { zh: "我更擅长处理具体的数据、报表和落地细节，而不是构思虚无缥缈的概念。", en: "I am better with data and concrete details than abstract concepts.", dim: 'S_N', lean: 'S' },
+            { zh: "在职场中，我认为维护团队的和谐氛围，比单纯争论“谁对谁错”更重要。", en: "Maintaining harmony is more important than arguing who is right.", dim: 'T_F', lean: 'F' },
+            { zh: "我极度享受并很容易适应突发的工作变动，这让我觉得有新鲜感。", en: "I enjoy and easily adapt to sudden work changes.", dim: 'J_P', lean: 'P' },
+            { zh: "在完全陌生的行业聚会上，我也能迅速找到话题并与人熟络起来。", en: "I can quickly network and find topics in unfamiliar events.", dim: 'E_I', lean: 'E' },
+            { zh: "我总是喜欢尝试最新的工具或颠覆性的方法，哪怕需要承担一定风险。", en: "I love trying new tools/methods, even if it carries risks.", dim: 'S_N', lean: 'N' },
+            { zh: "评价一个项目的最终成功与否，关键在于KPI指标是否达成，而不是团队在其中学到了什么。", en: "Project success is strictly about KPI, not what the team learned.", dim: 'T_F', lean: 'T' }
+        ];
+
+        // 终极优化：引入业界顶级的开源扁平化矢量图标 (Twemoji Flat)
+        // 具有100%国民辨识度，同时兼具扁平化的高级 UI 质感。加入容错拦截机制，保证极速、无残缺。
+        const getFlatIcon = (code, fallbackEmoji) => `
+            <div class="w-full h-full flex items-center justify-center">
+                <img src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${code}.svg" 
+                     alt="${fallbackEmoji}" 
+                     class="icon-flat" 
+                     loading="lazy" 
+                     decoding="async" 
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                <span class="text-4xl md:text-5xl hidden transition-transform duration-300 drop-shadow-sm group-hover:scale-110" style="display: none;">${fallbackEmoji}</span>
+            </div>
+        `;
+
+        const animalIcons = {
+            wolf: getFlatIcon("1f43a", "🐺"),
+            owl: getFlatIcon("1f989", "🦉"),
+            lion: getFlatIcon("1f981", "🦁"),
+            fox: getFlatIcon("1f98a", "🦊"),
+            deer: getFlatIcon("1f98c", "🦌"),
+            dolphin: getFlatIcon("1f42c", "🐬"),
+            dog: getFlatIcon("1f436", "🐶"),
+            butterfly: getFlatIcon("1f98b", "🦋"),
+            beaver: getFlatIcon("1f9ab", "🦫"),
+            elephant: getFlatIcon("1f418", "🐘"),
+            eagle: getFlatIcon("1f985", "🦅"),
+            bear: getFlatIcon("1f43b", "🐻"),
+            cat: getFlatIcon("1f408-200d-2b1b", "🐈‍⬛"),
+            sloth: getFlatIcon("1f9a5", "🦥"),
+            cheetah: getFlatIcon("1f406", "🐆"),
+            peacock: getFlatIcon("1f99a", "🦚")
+        };
+
+        const animalData = {
+            'INTJ': { name: { zh: '独狼', en: 'Wolf' }, title: { zh: '高瞻远瞩的战略家', en: 'Visionary Strategist' }, desc: { zh: '谋定而后动，行胜于言，追求极致的效率与真理。', en: 'Think before act, efficiency and truth above all.' }, stats: [95, 85, 80, 40, 55, 90], icon: animalIcons.wolf },
+            'INTP': { name: { zh: '猫头鹰', en: 'Owl' }, title: { zh: '深不可测的学者', en: 'Profound Scholar' }, desc: { zh: '真理隐藏在深邃的思考与无尽的探索之中。', en: 'Truth hides in deep thoughts and endless exploration.' }, stats: [90, 55, 95, 45, 50, 80], icon: animalIcons.owl },
+            'ENTJ': { name: { zh: '狮子', en: 'Lion' }, title: { zh: '霸气侧漏的领导者', en: 'Dominant Leader' }, desc: { zh: '领导是我的天性，成就卓越是我的使命。', en: 'Leadership is nature, excellence is the mission.' }, stats: [90, 100, 75, 60, 85, 95], icon: animalIcons.lion },
+            'ENTP': { name: { zh: '狐狸', en: 'Fox' }, title: { zh: '机智狡黠的破局者', en: 'Witty Disruptor' }, desc: { zh: '规则就是用来打破的，创新永无止境。', en: 'Rules are meant to be broken, innovation never ends.' }, stats: [85, 65, 100, 55, 90, 85], icon: animalIcons.fox },
+            'INFJ': { name: { zh: '灵鹿', en: 'Deer' }, title: { zh: '洞察人心的预言家', en: 'Insightful Prophet' }, desc: { zh: '不仅看到你现在的样子，更能看到你未来的可能。', en: 'Seeing not just who you are, but who you can be.' }, stats: [80, 70, 85, 85, 75, 60], icon: animalIcons.deer },
+            'INFP': { name: { zh: '海豚', en: 'Dolphin' }, title: { zh: '治愈系梦想家', en: 'Healing Dreamer' }, desc: { zh: '在理想的海洋中遨游，用温柔治愈世界。', en: 'Swimming in ideals, healing the world softly.' }, stats: [65, 45, 95, 90, 80, 55], icon: animalIcons.dolphin },
+            'ENFJ': { name: { zh: '金毛', en: 'Dog' }, title: { zh: '温暖导师', en: 'Warm Mentor' }, desc: { zh: '点亮他人，共同成长，是世界上最快乐的事。', en: 'Lighting up others and growing together is pure joy.' }, stats: [75, 80, 70, 100, 95, 75], icon: animalIcons.dog },
+            'ENFP': { name: { zh: '蝴蝶', en: 'Butterfly' }, title: { zh: '创意先锋', en: 'Creative Hub' }, desc: { zh: '灵感如风，自由如我，永远热爱新鲜事物。', en: 'Inspiration like wind, always loving new things.' }, stats: [65, 50, 100, 85, 95, 70], icon: animalIcons.butterfly },
+            'ISTJ': { name: { zh: '海狸', en: 'Beaver' }, title: { zh: '脚踏实地的筑梦师', en: 'Grounded Builder' }, desc: { zh: '用坚韧的毅力和严谨的态度，筑起可靠的堡垒。', en: 'Building reliable fortresses with rigor and grit.' }, stats: [60, 100, 40, 65, 55, 90], icon: animalIcons.beaver },
+            'ISFJ': { name: { zh: '大象', en: 'Elephant' }, title: { zh: '隐形盾牌', en: 'Hidden Shield' }, desc: { zh: '默默付出，守护规则，永远是你最坚实的后盾。', en: 'Silently giving, always your strongest backing.' }, stats: [55, 95, 45, 95, 70, 80], icon: animalIcons.elephant },
+            'ESTJ': { name: { zh: '雄鹰', en: 'Eagle' }, title: { zh: '铁面教官', en: 'Tough Coach' }, desc: { zh: '目标明确，行动果决，效率就是生命。', en: 'Clear goals, swift action, efficiency is life.' }, stats: [75, 100, 50, 60, 80, 95], icon: animalIcons.eagle },
+            'ESFJ': { name: { zh: '大熊', en: 'Bear' }, title: { zh: '团队管家', en: 'Team Housekeeper' }, desc: { zh: '照顾好团队的每一个人，是我的责任与骄傲。', en: 'Taking care of everyone is my pride and duty.' }, stats: [50, 90, 45, 100, 90, 70], icon: animalIcons.bear },
+            'ISTP': { name: { zh: '黑猫', en: 'Cat' }, title: { zh: '独立工匠', en: 'Cool Techie' }, desc: { zh: '以最少的精力，精准解决最复杂的问题。', en: 'Solving complex issues precisely with minimal effort.' }, stats: [70, 85, 75, 40, 45, 95], icon: animalIcons.cat },
+            'ISFP': { name: { zh: '树懒', en: 'Sloth' }, title: { zh: '艺术灵魂', en: 'Soul Artist' }, desc: { zh: '拒绝内卷，跟随内心的节奏，活在当下。', en: 'Rejecting the rat race, following the inner rhythm.' }, stats: [45, 45, 85, 80, 60, 85], icon: animalIcons.sloth },
+            'ESTP': { name: { zh: '猎豹', en: 'Cheetah' }, title: { zh: '追求刺激的冒险家', en: 'Thrill-seeking Adventurer' }, desc: { zh: '生命不息，折腾不止，在挑战中寻找快感。', en: 'Endless hustle, finding thrill in every challenge.' }, stats: [65, 95, 70, 55, 85, 100], icon: animalIcons.cheetah },
+            'ESFP': { name: { zh: '孔雀', en: 'Peacock' }, title: { zh: '氛围领袖', en: 'Mood Maker' }, desc: { zh: '聚光灯在哪里，我就在哪里，传递快乐能量。', en: 'Wherever the spotlight is, spreading joyful energy.' }, stats: [40, 65, 80, 90, 100, 75], icon: animalIcons.peacock }
+        };
+
+        const radarLabels = {
+            zh: ['外向(E)/沟通', '实感(S)/执行', '思考(T)/战略', '直觉(N)/创新', '情感(F)/协作', '感知(P)/逆商'],
+            en: ['Extroversion', 'Sensing', 'Thinking', 'Intuition', 'Feeling', 'Perceiving']
+        };
+
+        function toggleLang() {
+            lang = lang === 'zh' ? 'en' : 'zh';
+            document.getElementById('langText').innerHTML = lang === 'zh' ? 'English' : '中文';
+            if(animalKey) renderResult();
+            else if(currentQ > 0) renderQuiz();
+            else renderIntro();
+        }
+
+        // ====== 1. 首页 (全部统一高级偏蓝色底座，4行4列网格) ======
+        function renderIntro() {
+            const t = i18n[lang];
+            const allKeys = Object.keys(animalData);
+
+            document.getElementById('content').innerHTML = `
+                <div class="fade-in text-center max-w-4xl mx-auto pt-4 pb-20">
+                    <span class="text-[11px] font-bold text-brand bg-brand-light/60 border border-brand/20 px-5 py-2 rounded-full mb-10 inline-block shadow-sm tracking-wide">
+                        ${t.badge}
+                    </span>
+                    <h1 class="text-4xl md:text-[4.2rem] font-black text-gray-800 mb-6 tracking-tight leading-tight">
+                        ${t.titleP1} <span class="text-brand">${t.titleP2}</span>
+                    </h1>
+                    <p class="text-base md:text-xl text-gray-400 font-medium italic mb-10 tracking-wide">${t.subtitle}</p>
+                    <p class="text-gray-500 mb-12 leading-relaxed text-[15px] max-w-lg mx-auto">${t.desc}</p>
+                    
+                    <button onclick="startQuiz()" class="bg-brand hover:bg-brand-dark text-white font-bold py-5 px-14 md:px-20 rounded-[2rem] shadow-[0_10px_35px_-8px_rgba(102,192,177,0.7)] transition-all duration-300 text-xl flex items-center justify-center gap-2 mx-auto active:scale-95 tracking-wide">
+                        ${t.startBtn}
+                    </button>
+
+                    <div class="mt-28 w-full text-center">
+                        <p class="text-[12px] font-bold text-gray-400 mb-10 tracking-[0.2em] uppercase">16型职场动物图鉴 / Personality Showcase</p>
+                        
+                        <div class="grid grid-cols-4 gap-4 md:gap-7 px-2 max-w-2xl mx-auto">
+                            ${allKeys.map(k => `
+                                <div class="animal-card flex flex-col items-center justify-center bg-white rounded-[1.8rem] shadow-soft border border-gray-50 hover:border-blue-300 p-4 md:p-6 transition-all duration-300 hover:-translate-y-2 group cursor-default">
+                                    <div class="w-14 h-14 md:w-20 md:h-20 mb-4 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 flex items-center justify-center shadow-badge transition-transform duration-300 group-hover:scale-110">
+                                        ${animalData[k].icon}
+                                    </div>
+                                    <span class="text-[11px] md:text-xs font-bold text-gray-500 group-hover:text-blue-500 transition-colors">${animalData[k].name[lang]}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function startQuiz() {
+            currentQ = 0;
+            scores = { E_I: 0, S_N: 0, T_F: 0, J_P: 0 };
+            historyQueue = [];
+            renderQuiz();
+        }
+
+        // ====== 2. 测试页 ======
+        function renderQuiz() {
+            const t = i18n[lang];
+            const q = questions[currentQ];
+            const progress = ((currentQ + 1) / questions.length) * 100;
+            
+            const btnStyles = [
+                "border-red-500 text-red-600 hover:bg-red-50", 
+                "border-red-300 text-red-400 hover:bg-red-50", 
+                "border-gray-200 text-gray-500 hover:bg-gray-50", 
+                "border-brand/60 text-brand hover:bg-brand/5", 
+                "border-brand text-brand-dark hover:bg-brand/10"
+            ];
+
+            document.getElementById('content').innerHTML = `
+                <div class="w-full max-w-4xl mx-auto slide-up">
+                    <div class="bg-white rounded-[2.5rem] shadow-soft border border-gray-50 p-10 md:p-16 relative overflow-hidden min-h-[60vh] flex flex-col justify-center">
+                        
+                        <div class="text-center mb-10">
+                            <span class="text-xs font-bold text-brand tracking-widest uppercase">${t.qPrefix} ${currentQ + 1} / ${questions.length}</span>
+                        </div>
+
+                        <div class="text-center mb-14 px-4">
+                            <h2 class="text-2xl md:text-[2.2rem] font-bold text-gray-800 leading-snug mb-6 tracking-tight">${q[lang]}</h2>
+                            <p class="text-gray-400 text-sm md:text-lg font-medium italic">${lang === 'zh' ? q.en : q.zh}</p>
+                        </div>
+                        
+                        <div class="flex flex-col md:flex-row gap-4 mb-20 w-full max-w-3xl mx-auto">
+                            ${t.options.map((opt, i) => `
+                                <button onclick="handleAnswer(${i})" class="flex-1 py-5 rounded-2xl border-2 bg-white option-btn flex flex-col items-center justify-center gap-1.5 ${btnStyles[i]}">
+                                    <span class="font-bold text-base tracking-wide">${opt}</span>
+                                    <span class="text-[10px] opacity-60 font-medium">${t.optionsEn[i]}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+
+                        <div class="flex justify-start w-full max-w-3xl mx-auto">
+                            <button onclick="goBack()" class="text-base font-bold text-gray-400 hover:text-gray-700 transition-colors flex items-center gap-1.5 py-2 -ml-2 ${currentQ === 0 ? 'invisible' : ''}">
+                                ⬅ ${t.prevBtn}
+                            </button>
+                        </div>
+
+                        <div class="absolute bottom-0 left-0 h-1.5 bg-gray-100 w-full">
+                            <div class="h-full bg-brand transition-all duration-700 ease-in-out" style="width: ${progress}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleAnswer(index) {
+            const weight = index - 2; 
+            const q = questions[currentQ];
+            const isFirst = q.lean === q.dim.split('_')[0];
+            const change = isFirst ? weight : -weight;
+
+            historyQueue.push({ dim: q.dim, score: change });
+            scores[q.dim] += change;
+
+            if (currentQ < questions.length - 1) {
+                currentQ++;
+                renderQuiz();
+            } else {
+                calculateResult();
+            }
+        }
+
+        function goBack() {
+            if (currentQ > 0) {
+                currentQ--;
+                const last = historyQueue.pop();
+                if (last) scores[last.dim] -= last.score;
+                renderQuiz();
+            }
+        }
+
+        function calculateResult() {
+            const char1 = scores.E_I >= 0 ? 'E' : 'I';
+            const char2 = scores.S_N >= 0 ? 'S' : 'N';
+            const char3 = scores.T_F >= 0 ? 'T' : 'F';
+            const char4 = scores.J_P >= 0 ? 'J' : 'P';
+            animalKey = `${char1}${char2}${char3}${char4}`;
+            renderResult();
+        }
+
+        // ====== 3. 结果页 ======
+        function renderResult() {
+            const t = i18n[lang];
+            const data = animalData[animalKey];
+
+            document.getElementById('content').innerHTML = `
+                <div class="w-full space-y-7 fade-in pb-16 max-w-5xl mx-auto">
+                    
+                    <div class="bg-white rounded-[2.5rem] shadow-soft border border-gray-100 p-8 md:p-14 flex flex-col md:flex-row gap-12 items-center relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-2 bg-blue-300"></div>
+                        
+                        <div class="flex flex-col items-center min-w-[240px] relative animal-card cursor-default">
+                            <div class="w-44 h-44 md:w-52 md:h-52 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-inner border-[6px] border-white relative z-10 p-6 drop-shadow-lg transition-colors duration-300">
+                                ${data.icon}
+                                <div class="absolute -bottom-2 -right-2 bg-white rounded-full p-2.5 shadow-sm border border-gray-50 flex items-center justify-center text-xl z-20">✨</div>
+                            </div>
+                            <h1 class="text-4xl font-black text-gray-900 mt-8 tracking-tight">${data.name[lang]}</h1>
+                            <p class="text-gray-500 font-bold text-sm mt-2">${data.title[lang]}</p>
+                        </div>
+
+                        <div class="flex-1 text-center md:text-left border-t md:border-t-0 md:border-l border-gray-100 pt-6 md:pt-0 md:pl-12 w-full">
+                            <h3 class="text-xl font-bold text-gray-800 mb-1">${t.resultTitle}</h3>
+                            <p class="text-gray-400 text-xs font-bold tracking-widest uppercase mb-7">${t.resultSubtitle}</p>
+                            
+                            <blockquote class="text-lg md:text-2xl text-gray-600 border-l-[6px] border-blue-300 pl-5 mb-10 italic font-medium leading-relaxed tracking-tight transition-colors duration-300">
+                                "${data.desc[lang]}"
+                            </blockquote>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13px] text-gray-600 font-bold bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
+                                <div class="flex items-center gap-3"><span class="text-blue-500 text-lg font-black">✓</span> 独特的动物本能加持</div>
+                                <div class="flex items-center gap-3"><span class="text-blue-500 text-lg font-black">✓</span> 深度契合的职场属性</div>
+                                <div class="flex items-center gap-3"><span class="text-blue-500 text-lg font-black">✓</span> AI 深度分析已生成</div>
+                                <div class="flex items-center gap-3"><span class="text-blue-500 text-lg font-black">✓</span> 可视化能力雷达图</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-7">
+                        <div class="lg:col-span-5 bg-white rounded-[2.5rem] p-10 shadow-soft border border-gray-100 flex flex-col items-center justify-center h-[500px]">
+                            <div class="w-full text-left mb-6">
+                                <h3 class="text-lg font-bold text-gray-800">${t.radarTitle}</h3>
+                                <p class="text-[10px] text-gray-400 font-bold tracking-[0.2em] uppercase">${t.radarSubtitle}</p>
+                            </div>
+                            <div class="flex-1 w-full flex items-center justify-center">
+                                <canvas id="radarCanvas" class="w-full max-w-[340px]"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="lg:col-span-7 flex flex-col gap-5" id="aiContainer">
+                            <div class="bg-white rounded-[2.5rem] shadow-soft border border-gray-100 p-12 h-full flex flex-col items-center justify-center text-center">
+                                <div class="spinner mb-6"></div>
+                                <h3 class="font-bold text-gray-800 text-lg">正在连接 AI 分析模型</h3>
+                                <p class="text-brand text-sm mt-2">${t.analyzing}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="w-full flex justify-center pt-8">
+                        <button onclick="reset()" class="bg-[#2D3748] hover:bg-[#1A202C] text-white font-bold py-4 md:py-5 px-14 md:px-20 rounded-full shadow-[0_12px_35px_-8px_rgba(45,55,72,0.4)] transition-all duration-300 text-lg md:text-xl active:scale-95 tracking-wide">
+                            ${t.retake}
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            drawRadarChart();
+            fetchGemini();
+        }
+
+        function drawRadarChart() {
+            const canvas = document.getElementById('radarCanvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const size = 340;
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            canvas.style.width = size + 'px';
+            ctx.scale(dpr, dpr);
+
+            const center = size / 2;
+            const radius = 105;
+            const sides = 6;
+            const labels = radarLabels[lang];
+            const values = animalData[animalKey].stats;
+
+            ctx.clearRect(0, 0, size, size);
+
+            ctx.strokeStyle = '#F1F5F9';
+            ctx.lineWidth = 1;
+            for (let s = 1; s <= 4; s++) {
+                let r = radius * (s / 4);
+                ctx.beginPath();
+                for (let i = 0; i < sides; i++) {
+                    let a = (Math.PI * 2 * i) / sides - Math.PI / 2;
+                    let x = center + r * Math.cos(a);
+                    let y = center + r * Math.sin(a);
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = '#94A3B8';
+            ctx.font = 'bold 10px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < sides; i++) {
+                let a = (Math.PI * 2 * i) / sides - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(center, center);
+                ctx.lineTo(center + radius * Math.cos(a), center + radius * Math.sin(a));
+                ctx.stroke();
+                let labelRadius = radius + 35;
+                ctx.fillText(labels[i], center + labelRadius * Math.cos(a), center + labelRadius * Math.sin(a) + 4);
+            }
+
+            ctx.beginPath();
+            for (let i = 0; i < sides; i++) {
+                let a = (Math.PI * 2 * i) / sides - Math.PI / 2;
+                let r = radius * (values[i] / 100);
+                let x = center + r * Math.cos(a);
+                let y = center + r * Math.sin(a);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(102, 192, 177, 0.25)';
+            ctx.fill();
+            ctx.strokeStyle = '#66C0B1';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+
+        function fetchGemini() {
+            const data = animalData[animalKey];
+            const t = i18n[lang];
+
+            setTimeout(() => {
+                const html = `
+                    <div class="bg-white rounded-[1.8rem] shadow-soft border-l-[8px] border-brand p-7 fade-in h-full flex flex-col justify-center transition-colors duration-300">
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="text-2xl">🌟</span><h4 class="font-black text-gray-800 text-[16px]">${t.aiTitles[0]}</h4>
+                        </div>
+                        <ul class="text-[14px] text-gray-600 space-y-2.5 pl-4 list-disc marker:text-brand font-medium">
+                            <li>作为【${data.name[lang]}】，你的洞察力能迅速在复杂信息中提取关键逻辑。</li>
+                            <li>执行效率极高，在明确目标后能排除万难实现结果。</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-white rounded-[1.8rem] shadow-soft border-l-[8px] border-red-400 p-7 fade-in h-full flex flex-col justify-center" style="animation-delay: 0.1s;">
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="text-2xl">⚠️</span><h4 class="font-black text-gray-800 text-[16px]">${t.aiTitles[1]}</h4>
+                        </div>
+                        <p class="text-[14px] text-gray-600 pl-1 font-medium">容易过度陷入任务而忽视人际链接，在高压环境下可能显得过于理性而冷淡。</p>
+                    </div>
+
+                    <div class="bg-white rounded-[1.8rem] shadow-soft border-l-[8px] border-[#5AB2FF] p-7 fade-in h-full flex flex-col justify-center" style="animation-delay: 0.2s;">
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="text-2xl">💼</span><h4 class="font-black text-gray-800 text-[16px]">${t.aiTitles[2]}</h4>
+                        </div>
+                        <p class="text-[14px] text-gray-600 italic pl-1 font-bold leading-relaxed">“降低对他人的过度期待，并在逻辑中注入一丝温度。”</p>
+                    </div>
+                `;
+                document.getElementById('aiContainer').innerHTML = html;
+            }, 1000); 
+        }
+
+        function reset() {
+            currentQ = 0;
+            animalKey = null;
+            historyQueue = [];
+            renderIntro();
+        }
+
+        renderIntro();
+    </script>
+</body>
+</html>
