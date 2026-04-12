@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trooly.CATI | 职场动物人格测试</title>
     
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -15,9 +20,9 @@
                         dark: '#1F2937',
                     },
                     boxShadow: {
-                        'soft': '0 6px 24px -4px rgba(0,0,0,0.04)',
-                        'float': '0 12px 32px -6px rgba(102, 192, 177, 0.25)',
-                        'badge': '0 6px 15px rgba(0,0,0,0.06), inset 0 2px 0 rgba(255,255,255,0.8)'
+                        'soft': '0 4px 20px -2px rgba(0,0,0,0.03)',
+                        'float': '0 10px 30px -5px rgba(102, 192, 177, 0.25)',
+                        'badge': '0 4px 12px rgba(0,0,0,0.05), inset 0 2px 0 rgba(255,255,255,0.9)'
                     }
                 }
             }
@@ -40,11 +45,11 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        .fade-in { animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-        .slide-up { animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .slide-up { animation: slideUp 0.4s ease-out forwards; }
         
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
         .spinner {
             border: 3px solid rgba(102, 192, 177, 0.15);
@@ -59,17 +64,17 @@
         ::-webkit-scrollbar-thumb { background: #66C0B1; border-radius: 10px; }
         
         .option-btn { transition: all 0.2s ease-in-out; }
-        .option-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.06); }
+        .option-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
         
-        /* 3D 动物图标投影优化 */
-        .icon-3d {
-            filter: drop-shadow(0px 8px 10px rgba(0,0,0,0.12));
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            width: 75%;
-            height: 75%;
+        /* 扁平图标微交互：去除高消耗滤镜，仅保留缩放和轻微阴影，极度流畅 */
+        .icon-flat {
+            filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.08));
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            width: 65%;
+            height: 65%;
             object-fit: contain;
         }
-        .animal-card:hover .icon-3d {
+        .animal-card:hover .icon-flat {
             transform: scale(1.15) translateY(-2px);
         }
     </style>
@@ -156,27 +161,37 @@
             { zh: "评价一个项目的最终成功与否，关键在于KPI指标是否达成，而不是团队在其中学到了什么。", en: "Project success is strictly about KPI, not what the team learned.", dim: 'T_F', lean: 'T' }
         ];
 
-        // 高度还原参考图的 3D 拟物化图标 (引入高清资源，包含容错机制)
-        const baseUrl = "https://cdn.jsdelivr.net/gh/Tarikul-Islam-Anik/Animated-Fluent-Emojis@master/Emojis/Animals/";
-        const getImg = (filename, fallbackEmoji) => `<img src="${baseUrl}${filename}" alt="${fallbackEmoji}" class="icon-3d" onerror="this.onerror=null; this.outerHTML='<span class=\\'text-4xl md:text-5xl drop-shadow-md\\'>${fallbackEmoji}</span>';"/>`;
+        // 终极优化：引入业界顶级的开源扁平化矢量图标 (Twemoji Flat)
+        // 具有100%国民辨识度，同时兼具扁平化的高级 UI 质感。加入容错拦截机制，保证极速、无残缺。
+        const getFlatIcon = (code, fallbackEmoji) => `
+            <div class="w-full h-full flex items-center justify-center">
+                <img src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/${code}.svg" 
+                     alt="${fallbackEmoji}" 
+                     class="icon-flat" 
+                     loading="lazy" 
+                     decoding="async" 
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+                <span class="text-4xl md:text-5xl hidden transition-transform duration-300 drop-shadow-sm group-hover:scale-110" style="display: none;">${fallbackEmoji}</span>
+            </div>
+        `;
 
         const animalIcons = {
-            wolf: getImg("Wolf.png", "🐺"),
-            owl: getImg("Owl.png", "🦉"),
-            lion: getImg("Lion.png", "🦁"),
-            fox: getImg("Fox.png", "🦊"),
-            deer: getImg("Deer.png", "🦌"),
-            dolphin: getImg("Dolphin.png", "🐬"),
-            dog: getImg("Dog%20Face.png", "🐶"),
-            butterfly: getImg("Butterfly.png", "🦋"),
-            beaver: getImg("Beaver.png", "🦫"),
-            elephant: getImg("Elephant.png", "🐘"),
-            eagle: getImg("Eagle.png", "🦅"),
-            bear: getImg("Bear.png", "🐻"),
-            cat: getImg("Black%20Cat.png", "🐈‍⬛"),
-            sloth: getImg("Sloth.png", "🦥"),
-            cheetah: getImg("Leopard.png", "🐆"),
-            peacock: getImg("Peacock.png", "🦚")
+            wolf: getFlatIcon("1f43a", "🐺"),
+            owl: getFlatIcon("1f989", "🦉"),
+            lion: getFlatIcon("1f981", "🦁"),
+            fox: getFlatIcon("1f98a", "🦊"),
+            deer: getFlatIcon("1f98c", "🦌"),
+            dolphin: getFlatIcon("1f42c", "🐬"),
+            dog: getFlatIcon("1f436", "🐶"),
+            butterfly: getFlatIcon("1f98b", "🦋"),
+            beaver: getFlatIcon("1f9ab", "🦫"),
+            elephant: getFlatIcon("1f418", "🐘"),
+            eagle: getFlatIcon("1f985", "🦅"),
+            bear: getFlatIcon("1f43b", "🐻"),
+            cat: getFlatIcon("1f408-200d-2b1b", "🐈‍⬛"),
+            sloth: getFlatIcon("1f9a5", "🦥"),
+            cheetah: getFlatIcon("1f406", "🐆"),
+            peacock: getFlatIcon("1f99a", "🦚")
         };
 
         const animalData = {
@@ -211,7 +226,7 @@
             else renderIntro();
         }
 
-        // ====== 1. 首页 (4行4列强迫症福音排列) ======
+        // ====== 1. 首页 (全部统一高级偏蓝色底座，4行4列网格) ======
         function renderIntro() {
             const t = i18n[lang];
             const allKeys = Object.keys(animalData);
@@ -236,11 +251,11 @@
                         
                         <div class="grid grid-cols-4 gap-4 md:gap-7 px-2 max-w-2xl mx-auto">
                             ${allKeys.map(k => `
-                                <div class="animal-card flex flex-col items-center justify-center bg-white rounded-[1.8rem] shadow-soft border border-gray-50 p-4 md:p-6 transition-all duration-300 hover:-translate-y-2 cursor-default">
-                                    <div class="w-14 h-14 md:w-20 md:h-20 mb-4 rounded-full bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 flex items-center justify-center shadow-badge">
+                                <div class="animal-card flex flex-col items-center justify-center bg-white rounded-[1.8rem] shadow-soft border border-gray-50 hover:border-blue-300 p-4 md:p-6 transition-all duration-300 hover:-translate-y-2 group cursor-default">
+                                    <div class="w-14 h-14 md:w-20 md:h-20 mb-4 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 flex items-center justify-center shadow-badge transition-transform duration-300 group-hover:scale-110">
                                         ${animalData[k].icon}
                                     </div>
-                                    <span class="text-[11px] md:text-xs font-bold text-gray-400 transition-colors">${animalData[k].name[lang]}</span>
+                                    <span class="text-[11px] md:text-xs font-bold text-gray-500 group-hover:text-blue-500 transition-colors">${animalData[k].name[lang]}</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -350,10 +365,10 @@
                 <div class="w-full space-y-7 fade-in pb-16 max-w-5xl mx-auto">
                     
                     <div class="bg-white rounded-[2.5rem] shadow-soft border border-gray-100 p-8 md:p-14 flex flex-col md:flex-row gap-12 items-center relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-full h-2 bg-brand/30"></div>
+                        <div class="absolute top-0 left-0 w-full h-2 bg-blue-300"></div>
                         
                         <div class="flex flex-col items-center min-w-[240px] relative animal-card cursor-default">
-                            <div class="w-44 h-44 md:w-52 md:h-52 rounded-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center shadow-inner border-[6px] border-white relative z-10 p-6 drop-shadow-lg">
+                            <div class="w-44 h-44 md:w-52 md:h-52 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-inner border-[6px] border-white relative z-10 p-6 drop-shadow-lg transition-colors duration-300">
                                 ${data.icon}
                                 <div class="absolute -bottom-2 -right-2 bg-white rounded-full p-2.5 shadow-sm border border-gray-50 flex items-center justify-center text-xl z-20">✨</div>
                             </div>
@@ -365,15 +380,15 @@
                             <h3 class="text-xl font-bold text-gray-800 mb-1">${t.resultTitle}</h3>
                             <p class="text-gray-400 text-xs font-bold tracking-widest uppercase mb-7">${t.resultSubtitle}</p>
                             
-                            <blockquote class="text-lg md:text-2xl text-gray-600 border-l-[6px] border-brand/50 pl-5 mb-10 italic font-medium leading-relaxed tracking-tight">
+                            <blockquote class="text-lg md:text-2xl text-gray-600 border-l-[6px] border-blue-300 pl-5 mb-10 italic font-medium leading-relaxed tracking-tight transition-colors duration-300">
                                 "${data.desc[lang]}"
                             </blockquote>
                             
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[13px] text-gray-600 font-bold bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
-                                <div class="flex items-center gap-3"><span class="text-brand text-lg font-black">✓</span> 独特的动物本能加持</div>
-                                <div class="flex items-center gap-3"><span class="text-brand text-lg font-black">✓</span> 深度契合的职场属性</div>
-                                <div class="flex items-center gap-3"><span class="text-brand text-lg font-black">✓</span> AI 深度分析已生成</div>
-                                <div class="flex items-center gap-3"><span class="text-brand text-lg font-black">✓</span> 可视化能力雷达图</div>
+                                <div class="flex items-center gap-3"><span class="text-blue-500 text-lg font-black">✓</span> 独特的动物本能加持</div>
+                                <div class="flex items-center gap-3"><span class="text-blue-500 text-lg font-black">✓</span> 深度契合的职场属性</div>
+                                <div class="flex items-center gap-3"><span class="text-blue-500 text-lg font-black">✓</span> AI 深度分析已生成</div>
+                                <div class="flex items-center gap-3"><span class="text-blue-500 text-lg font-black">✓</span> 可视化能力雷达图</div>
                             </div>
                         </div>
                     </div>
@@ -466,7 +481,7 @@
                 if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
             }
             ctx.closePath();
-            ctx.fillStyle = 'rgba(102, 192, 177, 0.35)';
+            ctx.fillStyle = 'rgba(102, 192, 177, 0.25)';
             ctx.fill();
             ctx.strokeStyle = '#66C0B1';
             ctx.lineWidth = 3;
@@ -479,7 +494,7 @@
 
             setTimeout(() => {
                 const html = `
-                    <div class="bg-white rounded-[1.8rem] shadow-soft border-l-[8px] border-brand p-7 fade-in h-full flex flex-col justify-center">
+                    <div class="bg-white rounded-[1.8rem] shadow-soft border-l-[8px] border-brand p-7 fade-in h-full flex flex-col justify-center transition-colors duration-300">
                         <div class="flex items-center gap-2 mb-4">
                             <span class="text-2xl">🌟</span><h4 class="font-black text-gray-800 text-[16px]">${t.aiTitles[0]}</h4>
                         </div>
@@ -504,7 +519,7 @@
                     </div>
                 `;
                 document.getElementById('aiContainer').innerHTML = html;
-            }, 1800);
+            }, 1000); 
         }
 
         function reset() {
